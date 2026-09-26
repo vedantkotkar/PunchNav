@@ -1,10 +1,13 @@
 package com.punch.navdisplay
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
-import android.content.Intent
+import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import androidx.core.app.NotificationCompat
 
 class PunchNavService : NotificationListenerService() {
 
@@ -14,6 +17,8 @@ class PunchNavService : NotificationListenerService() {
         var lastLine2 = ""
         var onDataUpdated: ((String, String) -> Unit)? = null
         var instance: PunchNavService? = null
+        const val CHANNEL_ID = "punch_nav_channel"
+        const val NOTIFICATION_ID = 1001
     }
 
     private var publisher: AvrcpPublisher? = null
@@ -21,8 +26,36 @@ class PunchNavService : NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        createNotificationChannel()
+        startForegroundNotification("PunchNav Active", "Listening for Google Maps...")
         publisher = AvrcpPublisher(this)
         isRunning = true
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "PunchNav HUD Service",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Shows live navigation status on car screen"
+            }
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun startForegroundNotification(title: String, text: String) {
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setSmallIcon(R.drawable.ic_launcher)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        startForeground(NOTIFICATION_ID, notification)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -44,6 +77,7 @@ class PunchNavService : NotificationListenerService() {
             lastLine1 = navInfo.line1
             lastLine2 = navInfo.line2
 
+            startForegroundNotification(navInfo.line1, navInfo.line2)
             publisher?.publish(navInfo.line1, navInfo.line2)
             onDataUpdated?.invoke(navInfo.line1, navInfo.line2)
         }
@@ -53,6 +87,7 @@ class PunchNavService : NotificationListenerService() {
         val navInfo = NavParser.parse("In 200m Turn right", "MG Road • 18m left", useAscii)
         lastLine1 = navInfo.line1
         lastLine2 = navInfo.line2
+        startForegroundNotification(navInfo.line1, navInfo.line2)
         publisher?.publish(navInfo.line1, navInfo.line2)
         onDataUpdated?.invoke(navInfo.line1, navInfo.line2)
     }
