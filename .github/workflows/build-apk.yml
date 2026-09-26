@@ -21,20 +21,12 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-        cache: 'gradle'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-
-    - name: Grant Execute Permission for Gradlew
+    - name: Generate Wrapper & Build APK
       run: |
-        if [ ! -f gradlew ]; then
-          gradle wrapper
-        fi
+        gradle wrapper --gradle-version 8.5
         chmod +x gradlew
-
-    - name: Build APK with Gradle
-      run: ./gradlew assembleRelease --stacktrace
+        ./gradlew assembleRelease --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
@@ -44,19 +36,17 @@ jobs:
 
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/heads/')
       with:
-        tag_name: v1.0.0-${{ github.run_number }}
-        name: PunchNav v1.0.0 (Build ${{ github.run_number }})
+        tag_name: v1.0.0
+        name: PunchNav v1.0.0 Ready APK
         body: |
-          ### 🎉 PunchNav Ready-to-Install APK
-          Turn-by-turn navigation HUD for Tata Punch 3.5" monochrome LCD.
+          ### 🚗 PunchNav Ready-to-Install APK
+          Turn-by-turn navigation HUD for Tata Punch 3.5" center screen.
           
-          **How to install:**
-          1. Download `PunchNav.apk` directly on your Android phone.
-          2. Tap install.
-          3. Open the app and tap **Grant Notification Access**.
-          4. Connect phone to your car's Bluetooth and start driving with Google Maps!
+          **Installation:**
+          1. Download `app-release.apk` directly on your Android phone.
+          2. Install and grant Notification Access.
+          3. Connect to your car's Bluetooth and start driving!
         files: |
           app/build/outputs/apk/release/app-release.apk
       env:
