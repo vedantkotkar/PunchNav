@@ -26,28 +26,31 @@ jobs:
       run: |
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
-        ./gradlew assembleRelease --stacktrace
+        ./gradlew assembleDebug assembleRelease --stacktrace
+        cp app/build/outputs/apk/debug/app-debug.apk ./PunchNav.apk
+        cp app/build/outputs/apk/release/app-release.apk ./PunchNav-release.apk
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: PunchNav-Release-APK
-        path: app/build/outputs/apk/release/app-release.apk
+        name: PunchNav-APK
+        path: PunchNav.apk
 
-    - name: Create GitHub Release with APK
+    - name: Update GitHub Release with APKs
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v1.0.0
-        name: PunchNav v1.0.0 Ready APK
+        name: PunchNav v1.0.0
         body: |
           ### 🚗 PunchNav Ready-to-Install APK
           Turn-by-turn navigation HUD for Tata Punch 3.5" center screen.
           
           **Installation:**
-          1. Download `app-release.apk` directly on your Android phone.
-          2. Install and grant Notification Access.
-          3. Connect to your car's Bluetooth and start driving!
+          * **Recommended (Universal Install):** Download `PunchNav.apk` directly on your Android phone.
+          * If Play Protect prompts you, tap **"More details" -> "Install anyway"**.
+          * Open the app and grant **Notification Access**.
         files: |
-          app/build/outputs/apk/release/app-release.apk
+          PunchNav.apk
+          PunchNav-release.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
